@@ -2,11 +2,11 @@
 # Database configuration
 
 # Connection string is in Go pq driver format:
-# host=<host> port=<port> user=<databaseUser> password=<databaseUserPassword> dbname=<databaseName>
+# host=localhost user=postgres password=2951 dbname=go_backend_uni port=5432 sslmode=disable
 
 [database]
 
-connection_string = "host=localhost port=5432 user=postgres password=2951 dbname=go_backend_uni sslmode=disable"
+connection_string = "host=localhost user=postgres password=2951 dbname=go_backend_uni port=5432 sslmode=disable"
 max_idle_connections = 5
 max_open_connections = 20
 connection_max_lifetime = "60s"
