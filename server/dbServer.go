@@ -30,7 +30,6 @@ func InitDatabase(config *viper.Viper) *gorm.DB {
 
 	sqlDB.SetMaxOpenConns(maxOpenConnections)
 	sqlDB.SetConnMaxLifetime(connectionMaxLifetime)
-
 	return db
 
 }

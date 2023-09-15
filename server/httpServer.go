@@ -1,6 +1,9 @@
 package server
 
 import (
+	"GoBackend/controllers"
+	"GoBackend/repositories"
+	"GoBackend/services"
 	"gorm.io/gorm"
 	"log"
 
@@ -14,8 +17,12 @@ type HttpServer struct {
 }
 
 func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
-	router := gin.Default()
+	postsRepository := repositories.NewPostRepository(dbHandler)
+	postsService := services.NewPostService(postsRepository)
+	postsController := controllers.NewPostController(postsService)
 
+	router := gin.Default()
+	router.POST("/post", postsController.CreatePost)
 	return HttpServer{
 		config: config,
 		router: router,
