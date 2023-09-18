@@ -23,6 +23,13 @@ func (ps PostService) CreatePost(post *models.Post) (*models.Post, *models.Respo
 	}
 	return ps.postsRepository.Create(post)
 }
+func (ps PostService) RetrieveAllPosts() ([]*models.Post, *models.ResponseError) {
+	return ps.postsRepository.RetrieveAllPosts()
+}
+
+func (ps PostService) GetComments(id string) (*[]models.Comment, *models.ResponseError) {
+	return ps.postsRepository.GetComments(id)
+}
 
 func validatePost(post *models.Post) *models.ResponseError {
 	if post.Title == "" {

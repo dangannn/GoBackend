@@ -3,7 +3,9 @@ package repositories
 // PostRepository представляет репозиторий для работы с моделью Post.
 import (
 	"GoBackend/models"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"net/http"
 )
 
 type PostRepository struct {
@@ -17,12 +19,18 @@ func NewPostRepository(db *gorm.DB) *PostRepository {
 
 // Create создает новый пост.
 func (r *PostRepository) Create(post *models.Post) (*models.Post, *models.ResponseError) {
-	r.db.Create(post)
+	err := r.db.Create(&post).Error
+	if err != nil {
+		return nil, &models.ResponseError{
+			Message: err.Error(),
+			Status:  http.StatusInternalServerError,
+		}
+	}
 	return post, nil
 }
 
 // FindByID находит пост по его идентификатору.
-func (r *PostRepository) FindByID(id uint) (*models.Post, error) {
+func (r *PostRepository) FindByID(id uuid.UUID) (*models.Post, error) {
 	var post models.Post
 	err := r.db.Where("id = ?", id).First(&post).Error
 	if err != nil {
@@ -41,12 +49,27 @@ func (r *PostRepository) DeleteByID(id uint) error {
 	return r.db.Where("id = ?", id).Delete(&models.Post{}).Error
 }
 
-// FindAll возвращает все посты.
-func (r *PostRepository) FindAll() ([]models.Post, error) {
-	var posts []models.Post
+// RetrieveAllPosts возвращает все посты.
+func (r *PostRepository) RetrieveAllPosts() ([]*models.Post, *models.ResponseError) {
+	var posts []*models.Post
 	err := r.db.Find(&posts).Error
 	if err != nil {
-		return nil, err
+		return nil, &models.ResponseError{
+			Message: err.Error(),
+			Status:  http.StatusInternalServerError,
+		}
 	}
 	return posts, nil
+}
+
+func (r *PostRepository) GetComments(id string) (*[]models.Comment, *models.ResponseError) {
+	var post models.Post
+	err := r.db.Preload("Comments").Where("id = ?", id).First(&post).Error
+	if err != nil {
+		return nil, &models.ResponseError{
+			Message: err.Error(),
+			Status:  http.StatusInternalServerError,
+		}
+	}
+	return &post.Comments, nil
 }

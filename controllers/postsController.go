@@ -45,3 +45,25 @@ func (pc PostController) CreatePost(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, response)
 }
+
+func (pc PostController) RetrieveAllPosts(ctx *gin.Context) {
+
+	response, responseErr := pc.postsService.RetrieveAllPosts()
+	if responseErr != nil {
+		ctx.AbortWithStatusJSON(responseErr.Status, responseErr)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, response)
+}
+
+func (pc PostController) GetComments(ctx *gin.Context) {
+	var id string = ctx.Param("id")
+	response, responseErr := pc.postsService.GetComments(id)
+	if responseErr != nil {
+		ctx.AbortWithStatusJSON(responseErr.Status, responseErr)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, response)
+}
