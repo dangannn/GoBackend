@@ -17,9 +17,15 @@ type HttpServer struct {
 }
 
 func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
+	//post layer
 	postsRepository := repositories.NewPostRepository(dbHandler)
 	postsService := services.NewPostService(postsRepository)
 	postsController := controllers.NewPostController(postsService)
+
+	//user layer
+	usersRepository := repositories.NewUserRepository(dbHandler)
+	usersService := services.NewUserService(usersRepository)
+	usersController := controllers.NewUsersController(usersService)
 
 	router := gin.Default()
 	//CRUD post
@@ -29,6 +35,9 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 	router.GET("/post/:id/comments", postsController.GetComments)
 	//post's pagination
 	router.GET("/posts/:page", postsController.GetPostPage)
+
+	router.GET("/user", usersController.GetAllUsers)
+
 	return HttpServer{
 		config: config,
 		router: router,
