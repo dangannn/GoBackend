@@ -62,6 +62,18 @@ func (r *PostRepository) RetrieveAllPosts() ([]*models.Post, *models.ResponseErr
 	return posts, nil
 }
 
+func (r *PostRepository) GetPostPage(page int) ([]*models.Post, *models.ResponseError) {
+	var posts []*models.Post
+	err := r.db.Limit(3).Offset(3 * page).Find(&posts).Error
+	if err != nil {
+		return nil, &models.ResponseError{
+			Message: err.Error(),
+			Status:  http.StatusInternalServerError,
+		}
+	}
+	return posts, nil
+}
+
 func (r *PostRepository) GetComments(id string) (*[]models.Comment, *models.ResponseError) {
 	var post models.Post
 	err := r.db.Preload("Comments").Where("id = ?", id).First(&post).Error

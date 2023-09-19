@@ -4,6 +4,7 @@ import (
 	"GoBackend/models"
 	"GoBackend/repositories"
 	"net/http"
+	"strconv"
 )
 
 type PostService struct {
@@ -25,6 +26,17 @@ func (ps PostService) CreatePost(post *models.Post) (*models.Post, *models.Respo
 }
 func (ps PostService) RetrieveAllPosts() ([]*models.Post, *models.ResponseError) {
 	return ps.postsRepository.RetrieveAllPosts()
+}
+
+func (ps PostService) GetPostPage(page string) ([]*models.Post, *models.ResponseError) {
+	pageNum, err := strconv.Atoi(page)
+	if err != nil {
+		return nil, &models.ResponseError{
+			Message: "Invalid page",
+			Status:  http.StatusBadRequest,
+		}
+	}
+	return ps.postsRepository.GetPostPage(pageNum)
 }
 
 func (ps PostService) GetComments(id string) (*[]models.Comment, *models.ResponseError) {

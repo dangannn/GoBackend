@@ -81,3 +81,7 @@ VALUES
 INSERT INTO comments(text, post_id)
 VALUES
     ('second comment', 1);
+
+INSERT INTO comments(text, post_id)
+VALUES
+    ('third comment', 2);

@@ -57,6 +57,17 @@ func (pc PostController) RetrieveAllPosts(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
+func (pc PostController) GetPostPage(ctx *gin.Context) {
+	var page string = ctx.Param("page")
+	response, responseErr := pc.postsService.GetPostPage(page)
+	if responseErr != nil {
+		ctx.AbortWithStatusJSON(responseErr.Status, responseErr)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, response)
+}
+
 func (pc PostController) GetComments(ctx *gin.Context) {
 	var id string = ctx.Param("id")
 	response, responseErr := pc.postsService.GetComments(id)

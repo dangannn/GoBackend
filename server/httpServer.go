@@ -22,9 +22,13 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 	postsController := controllers.NewPostController(postsService)
 
 	router := gin.Default()
+	//CRUD post
 	router.POST("/post", postsController.CreatePost)
 	router.GET("/post", postsController.RetrieveAllPosts)
+	//get all comments related to one post
 	router.GET("/post/:id/comments", postsController.GetComments)
+	//post's pagination
+	router.GET("/posts/:page", postsController.GetPostPage)
 	return HttpServer{
 		config: config,
 		router: router,
