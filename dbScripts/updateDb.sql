@@ -72,7 +72,7 @@ INSERT INTO users(username, user_password, user_role)
 VALUES
     ('admin', crypt('admin', gen_salt('bf')), 'admin');
 
--- DROP TABLE comments, users,posts
+DROP TABLE comments, users,posts;
 
 INSERT INTO comments(text, post_id)
 VALUES

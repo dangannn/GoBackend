@@ -2,11 +2,10 @@ package models
 
 import (
 	"golang.org/x/crypto/bcrypt"
-	"gorm.io/gorm"
 )
 
 type User struct {
-	gorm.Model
+	Id             uint   `gorm:"primaryKey"`
 	Name           string `gorm:"size:255"`
 	Email          string `gorm:"type:varchar(100);unique_index"`
 	HashedPassword []byte
