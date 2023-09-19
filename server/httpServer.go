@@ -37,6 +37,7 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 	router.GET("/posts/:page", postsController.GetPostPage)
 
 	router.GET("/user", usersController.GetAllUsers)
+	router.POST("/register", usersController.CreateUser)
 
 	return HttpServer{
 		config: config,

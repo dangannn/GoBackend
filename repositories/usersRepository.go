@@ -25,3 +25,14 @@ func (r *UserRepository) GetAllUsers() ([]*models.User, *models.ResponseError) {
 	}
 	return users, nil
 }
+
+func (r *UserRepository) CreateUser(user *models.User) (*models.User, *models.ResponseError) {
+	err := r.db.Create(&user).Error
+	if err != nil {
+		return nil, &models.ResponseError{
+			Message: err.Error(),
+			Status:  http.StatusInternalServerError,
+		}
+	}
+	return user, nil
+}
