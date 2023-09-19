@@ -68,11 +68,17 @@ CREATE TABLE users
 );
 CREATE INDEX user_access_token
     ON users (access_token);
-INSERT INTO users(username, user_password, user_role)
-VALUES
-    ('admin', crypt('admin', gen_salt('bf')), 'admin');
 
-DROP TABLE comments, users,posts;
+INSERT INTO users(name, hashed_password, role, email)
+VALUES
+    ('user', '1234','user','mail@mail.ru');
+INSERT INTO users(name, hashed_password, role, email)
+VALUES
+    ('user2', '1234','user2','mail@mail.ru');
+
+-- DROP TABLE comments, users,posts;
+
+--create comments
 
 INSERT INTO comments(text, post_id)
 VALUES
@@ -85,3 +91,32 @@ VALUES
 INSERT INTO comments(text, post_id)
 VALUES
     ('third comment', 2);
+
+-- create posts
+INSERT INTO posts(title, content, author_id)
+VALUES
+    ('1 post', 'asdasdad',1);
+INSERT INTO posts(title, content, author_id)
+VALUES
+    ('2 post', 'asdasdad',1);
+INSERT INTO posts(title, content, author_id)
+VALUES
+    ('3 post', 'asdasdad',1);
+INSERT INTO posts(title, content, author_id)
+VALUES
+    ('4 post', 'asdasdad',1);
+INSERT INTO posts(title, content, author_id)
+VALUES
+    ('5 post', 'asdasdad',2);
+INSERT INTO posts(title, content, author_id)
+VALUES
+    ('6 post', 'asdasdad',2);
+INSERT INTO posts(title, content, author_id)
+VALUES
+    ('7 post', 'asdasdad',2);
+INSERT INTO posts(title, content, author_id)
+VALUES
+    ('8 post', 'asdasdad',2);
+INSERT INTO posts(title, content, author_id)
+VALUES
+    ('9 post', 'asdasdad',2);

@@ -10,6 +10,7 @@ type User struct {
 	Email          string `gorm:"type:varchar(100);unique_index"`
 	HashedPassword []byte
 	Role           string `gorm:"not null"`
+	Posts          []Post `gorm:"foreignKey:AuthorId"`
 }
 
 func (user *User) SetNewPassword(passwordString string) {
