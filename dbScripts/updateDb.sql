@@ -69,15 +69,15 @@ CREATE TABLE users
 CREATE INDEX user_access_token
     ON users (access_token);
 
-INSERT INTO users(name, hashed_password, role, email)
+INSERT INTO users(name, password, role, email)
 VALUES
     ('user', '1234','user','mail@mail.ru');
-INSERT INTO users(name, hashed_password, role, email)
+INSERT INTO users(name, password, role, email)
 VALUES
     ('user2', '1234','user2','mail@mail.ru');
 
--- DROP TABLE comments, users,posts;
-
+DROP TABLE comments, users,posts;
+-- DROP TABLE users;
 --create comments
 
 INSERT INTO comments(text, post_id)

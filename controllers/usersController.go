@@ -56,3 +56,40 @@ func (uc UsersController) CreateUser(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, response)
 }
+
+func (uc UsersController) GetUserById(ctx *gin.Context) {
+	var id = ctx.Param("id")
+	response, responseErr := uc.usersService.GetUserById(id)
+	if responseErr != nil {
+		ctx.AbortWithStatusJSON(responseErr.Status, responseErr)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, response)
+}
+
+func (uc UsersController) LoginUser(ctx *gin.Context) {
+	body, err := io.ReadAll(ctx.Request.Body)
+	if err != nil {
+		log.Println("Error while reading login user request body", err)
+		ctx.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	var loginRequest models.LoginRequest
+
+	err = json.Unmarshal(body, &loginRequest)
+	if err != nil {
+		log.Println("Error while unmarshaling create post request body", err)
+		ctx.AbortWithError(http.StatusInternalServerError, err)
+		return
+	}
+
+	response, responseErr := uc.usersService.Login(&loginRequest)
+	if responseErr != nil {
+		ctx.AbortWithStatusJSON(responseErr.Status, responseErr)
+		return
+	}
+
+	ctx.JSON(http.StatusOK, response)
+}

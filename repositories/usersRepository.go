@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"GoBackend/models"
+	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 	"net/http"
 )
@@ -24,6 +25,41 @@ func (r *UserRepository) GetAllUsers() ([]*models.User, *models.ResponseError) {
 		}
 	}
 	return users, nil
+}
+
+func (r *UserRepository) GetUserById(id int) (*models.User, *models.ResponseError) {
+	var user *models.User
+	err := r.db.Where("id = ?", id).Find(&user).Error
+	if err != nil {
+		return nil, &models.ResponseError{
+			Message: err.Error(),
+			Status:  http.StatusInternalServerError,
+		}
+	}
+	return user, nil
+}
+
+func (r *UserRepository) Login(loginRequest *models.LoginRequest) (*models.User, *models.ResponseError) {
+	var user *models.User
+
+	err := r.db.Where("email = ?", loginRequest.Email).Find(&user).Error
+
+	if err != nil {
+		return nil, &models.ResponseError{
+			Message: "Wrong email or password 1",
+			Status:  http.StatusInternalServerError,
+		}
+	}
+	err1 := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(loginRequest.Password))
+
+	if err1 != nil {
+		return nil, &models.ResponseError{
+			Message: "Wrong email or password 2",
+			Status:  http.StatusInternalServerError,
+		}
+	}
+
+	return user, nil
 }
 
 func (r *UserRepository) CreateUser(user *models.User) (*models.User, *models.ResponseError) {
