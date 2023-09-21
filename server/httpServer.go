@@ -30,22 +30,28 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 	usersController := controllers.NewUsersController(usersService)
 
 	router := gin.Default()
+	api := router.Group("/api")
 	//CRUD post
-	router.POST("/post", postsController.CreatePost)
-	router.GET("/post", postsController.RetrieveAllPosts)
+	api.POST("/post", postsController.CreatePost)
+	//api.GET("/post", postsController.RetrieveAllPosts)
 	//get all comments related to one post
-	router.GET("/post/:id/comments", postsController.GetComments)
+	api.GET("/post/:id/comments", postsController.GetComments)
 	//post's pagination
-	router.GET("/posts/:page", postsController.GetPostPage)
+	api.GET("/posts/:page", postsController.GetPostPage)
 
-	router.GET("/user", usersController.GetAllUsers)
+	api.GET("/user", usersController.GetAllUsers)
 	//router.GET("/user/:id", usersController.GetUserById)
-	router.POST("/register", usersController.CreateUser)
-	router.POST("/login", usersController.LoginUser)
+	api.POST("/register", usersController.CreateUser)
+	api.POST("/login", usersController.LoginUser)
 
-	secured := router.Group("/secured").Use(Auth())
+	userRoutes := api.Group("/user").Use(AuthUser())
 	{
-		secured.GET("/user/:id", usersController.GetUserById)
+		userRoutes.GET("/user/:id", usersController.GetUserById)
+	}
+	adminRoutes := api.Group("/admin").Use(AuthAdmin())
+	{
+		adminRoutes.GET("/user/:id", usersController.GetUserById)
+		adminRoutes.GET("/post", postsController.RetrieveAllPosts)
 	}
 
 	return HttpServer{
@@ -61,10 +67,10 @@ func (hs HttpServer) Start() {
 	}
 }
 
-func Auth() gin.HandlerFunc {
+func AuthUser() gin.HandlerFunc {
 	return func(context *gin.Context) {
 		type CustomClaims struct {
-			Role string `json:"claims"`
+			Role string `json:"role"`
 			jwt.RegisteredClaims
 		}
 		tokenString := context.GetHeader("Authorization")
@@ -77,10 +83,41 @@ func Auth() gin.HandlerFunc {
 			return []byte("secrete-key"), nil
 		}, jwt.WithLeeway(2*time.Second))
 
-		if claims, ok := token.Claims.(*CustomClaims); ok && token.Valid {
-			log.Printf(claims.Role)
+		if claims, ok := token.Claims.(*CustomClaims); ok && token.Valid && claims.Role == "user" {
+			log.Println("role" + claims.Role)
 		} else {
 			log.Println(err)
+		}
+		if err != nil {
+			context.JSON(401, gin.H{"error": err.Error()})
+			context.Abort()
+			return
+		}
+		context.Next()
+	}
+}
+
+func AuthAdmin() gin.HandlerFunc {
+	return func(context *gin.Context) {
+		type CustomClaims struct {
+			Role string `json:"role"`
+			jwt.RegisteredClaims
+		}
+		tokenString := context.GetHeader("Authorization")
+		if tokenString == "" {
+			context.JSON(401, gin.H{"error": "request does not contain an access token"})
+			context.Abort()
+			return
+		}
+		token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
+			return []byte("secrete-key"), nil
+		}, jwt.WithLeeway(2*time.Second))
+
+		if claims, ok := token.Claims.(*CustomClaims); ok && token.Valid && claims.Role == "admin" {
+			log.Println("role" + claims.Role)
+		} else {
+			context.JSON(401, gin.H{"error": "wrong role"})
+			context.Abort()
 		}
 		if err != nil {
 			context.JSON(401, gin.H{"error": err.Error()})

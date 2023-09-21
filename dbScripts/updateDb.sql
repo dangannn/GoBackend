@@ -107,16 +107,16 @@ VALUES
     ('4 post', 'asdasdad',1);
 INSERT INTO posts(title, content, author_id)
 VALUES
-    ('5 post', 'asdasdad',2);
+    ('5 post', 'asdasdad',3);
 INSERT INTO posts(title, content, author_id)
 VALUES
-    ('6 post', 'asdasdad',2);
+    ('6 post', 'asdasdad',3);
 INSERT INTO posts(title, content, author_id)
 VALUES
-    ('7 post', 'asdasdad',2);
+    ('7 post', 'asdasdad',3);
 INSERT INTO posts(title, content, author_id)
 VALUES
-    ('8 post', 'asdasdad',2);
+    ('8 post', 'asdasdad',3);
 INSERT INTO posts(title, content, author_id)
 VALUES
-    ('9 post', 'asdasdad',2);
+    ('9 post', 'asdasdad',3);
