@@ -32,6 +32,10 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 	usersService := services.NewUserService(usersRepository)
 	usersController := controllers.NewUsersController(usersService)
 
+	emailsRepository := repositories.NewEmailRepository(dbHandler)
+	emailsService := services.NewEmailService(emailsRepository)
+	emailsController := controllers.NewEmailController(emailsService)
+
 	router := gin.Default()
 	store := cookie.NewStore([]byte("secret"))
 	router.Use(sessions.Sessions("mysession", store))
@@ -50,6 +54,7 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 	api := router.Group("/api")
 	//CRUD post
 	api.POST("/post", postsController.CreatePost)
+	api.GET("/email", emailsController.SendEmail)
 	//api.GET("/post", postsController.RetrieveAllPosts)
 	//get all comments related to one post
 	api.GET("/post/:id/comments", postsController.GetComments)
