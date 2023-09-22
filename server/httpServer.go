@@ -4,7 +4,10 @@ import (
 	"GoBackend/controllers"
 	"GoBackend/repositories"
 	"GoBackend/services"
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/golang-jwt/jwt/v5"
+	csrf "github.com/utrack/gin-csrf"
 	"gorm.io/gorm"
 	"log"
 	"time"
@@ -30,6 +33,20 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 	usersController := controllers.NewUsersController(usersService)
 
 	router := gin.Default()
+	store := cookie.NewStore([]byte("secret"))
+	router.Use(sessions.Sessions("mysession", store))
+	router.Use(csrf.Middleware(csrf.Options{
+		Secret: "secrete-key",
+		ErrorFunc: func(c *gin.Context) {
+			c.String(400, "CSRF token mismatch")
+			c.Abort()
+		},
+	}))
+
+	router.GET("/protected", func(c *gin.Context) {
+		c.String(200, csrf.GetToken(c))
+	})
+
 	api := router.Group("/api")
 	//CRUD post
 	api.POST("/post", postsController.CreatePost)
