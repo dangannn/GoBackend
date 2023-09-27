@@ -119,4 +119,4 @@ VALUES
     ('8 post', 'asdasdad',3);
 INSERT INTO posts(title, content, author_id)
 VALUES
-    ('9 post', 'asdasdad',3);
+    ('10 post', 'asdasdad',3);

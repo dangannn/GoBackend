@@ -5,6 +5,7 @@ import (
 	"GoBackend/repositories"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -46,7 +47,19 @@ func (us UserService) GetUserById(id string) (*models.User, *models.ResponseErro
 	return us.usersRepository.GetUserById(idNum)
 }
 
+func (us UserService) GetUserPosts(id string) (*[]models.Post, *models.ResponseError) {
+	idNum, err := strconv.Atoi(id)
+	if err != nil {
+		return nil, &models.ResponseError{
+			Message: "Invalid id",
+			Status:  http.StatusBadRequest,
+		}
+	}
+	return us.usersRepository.GetUserPosts(idNum)
+}
+
 func (us UserService) Login(loginRequest *models.LoginRequest) (*string, *models.ResponseError) {
+	log.Println(loginRequest)
 	user, err1 := us.usersRepository.Login(loginRequest)
 	if err1 != nil {
 		return nil, &models.ResponseError{
@@ -65,6 +78,7 @@ func (us UserService) Login(loginRequest *models.LoginRequest) (*string, *models
 			"sub":  loginRequest.Email,
 			"exp":  time.Now().Add(time.Hour * 72).Unix(),
 			"role": user.Role,
+			"id":   user.Id,
 		})
 	s, err2 := t.SignedString(key)
 	if err2 != nil {

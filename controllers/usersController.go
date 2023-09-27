@@ -10,17 +10,17 @@ import (
 	"net/http"
 )
 
-type UsersController struct {
+type UserController struct {
 	usersService *services.UserService
 }
 
-func NewUsersController(usersService *services.UserService) *UsersController {
-	return &UsersController{
+func NewUserController(usersService *services.UserService) *UserController {
+	return &UserController{
 		usersService: usersService,
 	}
 }
 
-func (uc UsersController) GetAllUsers(ctx *gin.Context) {
+func (uc UserController) GetAllUsers(ctx *gin.Context) {
 
 	response, responseErr := uc.usersService.GetAllUsers()
 	if responseErr != nil {
@@ -31,7 +31,7 @@ func (uc UsersController) GetAllUsers(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
-func (uc UsersController) CreateUser(ctx *gin.Context) {
+func (uc UserController) CreateUser(ctx *gin.Context) {
 	body, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
 		log.Println("Error while reading create user request body", err)
@@ -57,7 +57,7 @@ func (uc UsersController) CreateUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
-func (uc UsersController) GetUserById(ctx *gin.Context) {
+func (uc UserController) GetUserById(ctx *gin.Context) {
 	var id = ctx.Param("id")
 	response, responseErr := uc.usersService.GetUserById(id)
 	if responseErr != nil {
@@ -67,8 +67,19 @@ func (uc UsersController) GetUserById(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, response)
 }
+func (uc UserController) GetUserPosts(ctx *gin.Context) {
+	var id = ctx.Param("id")
+	response, responseErr := uc.usersService.GetUserPosts(id)
+	if responseErr != nil {
+		ctx.AbortWithStatusJSON(responseErr.Status, responseErr)
+		return
+	}
 
-func (uc UsersController) LoginUser(ctx *gin.Context) {
+	ctx.JSON(http.StatusOK, response)
+}
+
+func (uc UserController) LoginUser(ctx *gin.Context) {
+	log.Println(ctx.Request)
 	body, err := io.ReadAll(ctx.Request.Body)
 	if err != nil {
 		log.Println("Error while reading login user request body", err)

@@ -46,9 +46,9 @@ func (pc PostController) CreatePost(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
-func (pc PostController) RetrieveAllPosts(ctx *gin.Context) {
+func (pc PostController) GetAllPosts(ctx *gin.Context) {
 
-	response, responseErr := pc.postsService.RetrieveAllPosts()
+	response, responseErr := pc.postsService.GetAllPosts()
 	if responseErr != nil {
 		ctx.AbortWithStatusJSON(responseErr.Status, responseErr)
 		return

@@ -49,8 +49,8 @@ func (r *PostRepository) DeleteByID(id uint) error {
 	return r.db.Where("id = ?", id).Delete(&models.Post{}).Error
 }
 
-// RetrieveAllPosts возвращает все посты.
-func (r *PostRepository) RetrieveAllPosts() ([]*models.Post, *models.ResponseError) {
+// GetAllPosts возвращает все посты.
+func (r *PostRepository) GetAllPosts() ([]*models.Post, *models.ResponseError) {
 	var posts []*models.Post
 	err := r.db.Find(&posts).Error
 	if err != nil {

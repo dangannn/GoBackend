@@ -39,6 +39,18 @@ func (r *UserRepository) GetUserById(id int) (*models.User, *models.ResponseErro
 	return user, nil
 }
 
+func (r *UserRepository) GetUserPosts(id int) (*[]models.Post, *models.ResponseError) {
+	var user *models.User
+	err := r.db.Preload("Posts").Where("id = ?", id).First(&user).Error
+	if err != nil {
+		return nil, &models.ResponseError{
+			Message: err.Error(),
+			Status:  http.StatusInternalServerError,
+		}
+	}
+	return &user.Posts, nil
+}
+
 func (r *UserRepository) Login(loginRequest *models.LoginRequest) (*models.User, *models.ResponseError) {
 	var user *models.User
 

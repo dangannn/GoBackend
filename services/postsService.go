@@ -24,8 +24,8 @@ func (ps PostService) CreatePost(post *models.Post) (*models.Post, *models.Respo
 	}
 	return ps.postsRepository.Create(post)
 }
-func (ps PostService) RetrieveAllPosts() ([]*models.Post, *models.ResponseError) {
-	return ps.postsRepository.RetrieveAllPosts()
+func (ps PostService) GetAllPosts() ([]*models.Post, *models.ResponseError) {
+	return ps.postsRepository.GetAllPosts()
 }
 
 func (ps PostService) GetPostPage(page string) ([]*models.Post, *models.ResponseError) {
