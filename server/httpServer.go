@@ -45,6 +45,8 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 	emailsController := controllers.NewEmailController(emailsService)
 
 	router := gin.Default()
+	emailsService.TaskScheduling()
+
 	// Middleware CORS
 	router.Use(func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "http://127.0.0.1:5173")
