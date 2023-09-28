@@ -52,7 +52,7 @@ func (r *PostRepository) DeleteByID(id uint) error {
 // GetAllPosts возвращает все посты.
 func (r *PostRepository) GetAllPosts() ([]*models.Post, *models.ResponseError) {
 	var posts []*models.Post
-	err := r.db.Find(&posts).Error
+	err := r.db.Order("id desc").Find(&posts).Error
 	if err != nil {
 		return nil, &models.ResponseError{
 			Message: err.Error(),

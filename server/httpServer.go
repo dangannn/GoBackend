@@ -2,13 +2,16 @@ package server
 
 import (
 	"GoBackend/controllers"
+	"GoBackend/models"
 	"GoBackend/repositories"
 	"GoBackend/services"
 	"encoding/json"
+	"fmt"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/gorilla/websocket"
+	"github.com/redis/go-redis/v9"
 	csrf "github.com/utrack/gin-csrf"
 	"gorm.io/gorm"
 	"log"
@@ -25,6 +28,7 @@ type HttpServer struct {
 }
 
 func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
+
 	//post layer
 	postsRepository := repositories.NewPostRepository(dbHandler)
 	postsService := services.NewPostService(postsRepository)
@@ -35,6 +39,7 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 	usersService := services.NewUserService(usersRepository)
 	usersController := controllers.NewUserController(usersService)
 
+	//emails
 	emailsRepository := repositories.NewEmailRepository(dbHandler)
 	emailsService := services.NewEmailService(emailsRepository)
 	emailsController := controllers.NewEmailController(emailsService)
@@ -78,29 +83,123 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 			return origin == "http://127.0.0.1:5173" || origin == "http://127.0.0.1:8080"
 		},
 	}
+	var connections = make(map[*websocket.Conn]bool)
 
 	router.GET("/ws", func(c *gin.Context) {
 		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 		if err != nil {
 			return
 		}
+
 		defer conn.Close()
-		posts, _ := postsService.GetAllPosts()
-		jsonData, err := json.Marshal(posts)
+
+		connections[conn] = true
+
+		//Redis
+		redisClient := initRedis()
+		defer redisClient.Close()
+		// Получение значения из Redis
+
+		key := "posts"
+		var firstResponse []byte
+
+		cachedValue, err := redisClient.Get(c, key).Result()
+		if err != nil {
+			posts, _ := postsService.GetAllPosts()
+			jsonData, err := json.Marshal(posts)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			value := jsonData
+			// Сохранение значения в Redis с заданным временем жизни
+			err = redisClient.Set(c, key, value, 10*time.Minute).Err()
+			if err != nil {
+				fmt.Println("Error caching data:", err)
+				return
+			}
+			firstResponse = jsonData
+		} else {
+			log.Println("using cached data")
+			firstResponse = []byte(cachedValue)
+		}
+
+		err = conn.WriteMessage(websocket.TextMessage, firstResponse)
 		if err != nil {
 			log.Println(err)
 			return
 		}
-		//err = conn.WriteMessage(websocket.TextMessage, jsonData)
-		if err != nil {
-			log.Println(err)
-			return
-		}
-		i := 0
-		for i < 2 {
-			i++
-			err = conn.WriteMessage(websocket.TextMessage, jsonData)
-			time.Sleep(time.Second * 5)
+		for {
+			messageType, p, err := conn.ReadMessage()
+			if err != nil {
+				log.Println(err)
+				return
+			}
+
+			// Обработка и анализ входящих данных от клиента
+			var receivedData *models.Post
+
+			err = json.Unmarshal(p, &receivedData)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+
+			// Выполнение вставки данных в базу данных
+
+			response, responseErr := postsService.CreatePost(receivedData)
+			if responseErr != nil {
+				c.AbortWithStatusJSON(responseErr.Status, responseErr)
+				return
+			}
+			jsonData, err := json.Marshal(response)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+
+			currentValue, err := redisClient.Get(c, key).Result()
+			if err != nil && err != redis.Nil {
+				log.Fatalf("Failed to get current value: %v", err)
+				return
+			}
+
+			var objects []*models.Post
+
+			if currentValue != "" {
+				if err := json.Unmarshal([]byte(currentValue), &objects); err != nil {
+					log.Fatalf("Failed to unmarshal current value: %v", err)
+				}
+			}
+
+			objects = append(objects, receivedData)
+
+			updatedValue, err := json.Marshal(objects)
+			if err != nil {
+				log.Fatalf("Failed to marshal updated value: %v", err)
+			}
+
+			err = redisClient.Set(c, key, updatedValue, 10*time.Minute).Err()
+			if err != nil {
+				log.Fatalf("Failed to set new value: %v", err)
+			}
+
+			// Отправка данных обратно клиенту через вебсокет
+			for conn := range connections {
+				err := conn.WriteMessage(websocket.TextMessage, []byte("New post created"))
+				if err != nil {
+					fmt.Println(err)
+					conn.Close()
+					delete(connections, conn)
+				}
+				err = conn.WriteMessage(messageType, jsonData)
+				if err != nil {
+					fmt.Println(err)
+					conn.Close()
+					delete(connections, conn)
+				}
+			}
+
 		}
 	})
 
