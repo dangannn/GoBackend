@@ -16,6 +16,7 @@ import (
 	"gorm.io/gorm"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -28,6 +29,11 @@ type HttpServer struct {
 }
 
 func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
+
+	//comments layer
+	commentsRepository := repositories.NewCommentRepository(dbHandler)
+	commentsService := services.NewCommentService(commentsRepository)
+	//commentsController := controllers.NewCommentController(commentsService)
 
 	//post layer
 	postsRepository := repositories.NewPostRepository(dbHandler)
@@ -63,6 +69,8 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 		// Продолжаем выполнение обработчика
 		c.Next()
 	})
+
+	//Session & CSRF
 	store := cookie.NewStore([]byte("secret"))
 	router.Use(sessions.Sessions("mysession", store))
 	router.Use(csrf.Middleware(csrf.Options{
@@ -76,6 +84,8 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 	router.GET("/protected", func(c *gin.Context) {
 		c.String(200, csrf.GetToken(c))
 	})
+
+	//Websocket
 
 	var upgrader = websocket.Upgrader{
 		ReadBufferSize:  1024,
@@ -107,7 +117,7 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 
 		cachedValue, err := redisClient.Get(c, key).Result()
 		if err != nil {
-			posts, _ := postsService.GetAllPosts()
+			posts, _ := postsService.GetAll()
 			jsonData, err := json.Marshal(posts)
 			if err != nil {
 				log.Println(err)
@@ -131,6 +141,7 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 			log.Println(err)
 			return
 		}
+
 		for {
 			messageType, p, err := conn.ReadMessage()
 			if err != nil {
@@ -148,8 +159,183 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 			}
 
 			// Выполнение вставки данных в базу данных
+			//log.Println(receivedData.Id)
+			//log.Println(receivedData.Id == 0)
+			if receivedData.Id == 0 {
+				response, responseErr := postsService.Create(receivedData)
+				if responseErr != nil {
+					c.AbortWithStatusJSON(responseErr.Status, responseErr)
+					return
+				}
+				jsonData, err := json.Marshal(response)
+				if err != nil {
+					log.Println(err)
+					return
+				}
 
-			response, responseErr := postsService.CreatePost(receivedData)
+				currentValue, err := redisClient.Get(c, key).Result()
+				if err != nil && err != redis.Nil {
+					log.Fatalf("Failed to get current value: %v", err)
+					return
+				}
+
+				var objects []*models.Post
+
+				if currentValue != "" {
+					if err := json.Unmarshal([]byte(currentValue), &objects); err != nil {
+						log.Fatalf("Failed to unmarshal current value: %v", err)
+					}
+				}
+
+				objects = append(objects, receivedData)
+
+				updatedValue, err := json.Marshal(objects)
+				if err != nil {
+					log.Fatalf("Failed to marshal updated value: %v", err)
+				}
+
+				err = redisClient.Set(c, key, updatedValue, 10*time.Minute).Err()
+				if err != nil {
+					log.Fatalf("Failed to set new value: %v", err)
+				}
+
+				// Отправка данных обратно клиенту через вебсокет
+				for conn := range connections {
+					err := conn.WriteMessage(websocket.TextMessage, []byte("New post created"))
+					if err != nil {
+						fmt.Println(err)
+						conn.Close()
+						delete(connections, conn)
+					}
+					err = conn.WriteMessage(messageType, jsonData)
+					if err != nil {
+						fmt.Println(err)
+						conn.Close()
+						delete(connections, conn)
+					}
+				}
+			} else {
+				responseErr := postsService.Delete(strconv.Itoa(int(receivedData.Id)))
+				if responseErr != nil {
+					c.AbortWithStatusJSON(responseErr.Status, responseErr)
+					return
+				}
+				log.Println("удалено")
+				//TODO clear redis & response to client
+
+				currentValue, err := redisClient.Get(c, key).Result()
+				if err != nil && err != redis.Nil {
+					log.Fatalf("Failed to get current value: %v", err)
+					return
+				}
+
+				var objects []*models.Post
+
+				if currentValue != "" {
+					if err := json.Unmarshal([]byte(currentValue), &objects); err != nil {
+						log.Fatalf("Failed to unmarshal current value: %v", err)
+					}
+				}
+				for i, v := range objects {
+					if v.Id == receivedData.Id {
+						objects = append(objects[:i], objects[i+1:]...)
+						break
+					}
+				}
+
+				updatedValue, err := json.Marshal(objects)
+				if err != nil {
+					log.Fatalf("Failed to marshal updated value: %v", err)
+				}
+
+				err = redisClient.Set(c, key, updatedValue, 10*time.Minute).Err()
+				if err != nil {
+					log.Fatalf("Failed to set new value: %v", err)
+				}
+
+				for conn := range connections {
+					err := conn.WriteMessage(websocket.TextMessage, []byte("Post deleted"))
+					if err != nil {
+						fmt.Println(err)
+						conn.Close()
+						delete(connections, conn)
+					}
+					//err = conn.WriteMessage(messageType, jsonData)
+					//if err != nil {
+					//	fmt.Println(err)
+					//	conn.Close()
+					//	delete(connections, conn)
+					//}
+				}
+			}
+		}
+	})
+
+	router.GET("/ws/post/:id/comments", func(c *gin.Context) {
+		id := c.Param("id")
+		log.Println(id)
+		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+		if err != nil {
+			return
+		}
+
+		defer conn.Close()
+
+		connections[conn] = true
+		comments, _ := postsService.GetComments(id)
+		jsonData, err := json.Marshal(comments)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		err = conn.WriteMessage(websocket.TextMessage, jsonData)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		for {
+			messageType, p, err := conn.ReadMessage()
+			if err != nil {
+				log.Println(err)
+				return
+			}
+
+			// Обработка и анализ входящих данных от клиента
+			//var receivedData *models.Comment
+
+			type TmpComment struct {
+				Id        uint
+				Text      string
+				PostId    string
+				Approved  bool
+				AuthorId  uint
+				CreatedAt time.Time
+			}
+			var tmp TmpComment
+
+			err = json.Unmarshal(p, &tmp)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			tmpPostId, err := strconv.Atoi(tmp.PostId)
+			if err != nil {
+				fmt.Println(err)
+				c.Abort()
+				return
+			}
+			receivedData := models.Comment{
+				Id:        tmp.Id,
+				Text:      tmp.Text,
+				PostId:    uint(tmpPostId),
+				Approved:  tmp.Approved,
+				AuthorId:  tmp.AuthorId,
+				CreatedAt: tmp.CreatedAt,
+			}
+			log.Println("измененные", receivedData)
+
+			// Выполнение вставки данных в базу данных
+			response, responseErr := commentsService.Create(&receivedData)
 			if responseErr != nil {
 				c.AbortWithStatusJSON(responseErr.Status, responseErr)
 				return
@@ -160,35 +346,9 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 				return
 			}
 
-			currentValue, err := redisClient.Get(c, key).Result()
-			if err != nil && err != redis.Nil {
-				log.Fatalf("Failed to get current value: %v", err)
-				return
-			}
-
-			var objects []*models.Post
-
-			if currentValue != "" {
-				if err := json.Unmarshal([]byte(currentValue), &objects); err != nil {
-					log.Fatalf("Failed to unmarshal current value: %v", err)
-				}
-			}
-
-			objects = append(objects, receivedData)
-
-			updatedValue, err := json.Marshal(objects)
-			if err != nil {
-				log.Fatalf("Failed to marshal updated value: %v", err)
-			}
-
-			err = redisClient.Set(c, key, updatedValue, 10*time.Minute).Err()
-			if err != nil {
-				log.Fatalf("Failed to set new value: %v", err)
-			}
-
 			// Отправка данных обратно клиенту через вебсокет
 			for conn := range connections {
-				err := conn.WriteMessage(websocket.TextMessage, []byte("New post created"))
+				err := conn.WriteMessage(websocket.TextMessage, []byte("New comment created"))
 				if err != nil {
 					fmt.Println(err)
 					conn.Close()
@@ -201,29 +361,42 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 					delete(connections, conn)
 				}
 			}
-
 		}
 	})
 
+	//API
 	api := router.Group("/api")
 
-	//CRUD post
-	api.POST("/post", postsController.CreatePost)
+	//email routes
 	api.GET("/email", emailsController.SendEmail)
-	//api.GET("/post", postsController.RetrieveAllPosts)
-	//get all comments related to one post
+
+	//CRUD post & get comments & pagination
+	api.POST("/post", postsController.Create)
+	api.GET("/post/:id", postsController.GetById)
+	api.GET("/post/:id/delete", postsController.Delete)
+	api.GET("/post/:id/update", postsController.Update)
+	api.GET("/post/all", postsController.GetAll)
 	api.GET("/post/:id/comments", postsController.GetComments)
-	//post's pagination
-	api.GET("/posts/:page", postsController.GetPostPage)
+	api.GET("/posts/:page/page", postsController.GetPage)
+	//api.POST("/post/:id/checked", postsController.AddCheck)
 
-	api.GET("/user", usersController.GetAllUsers)
-	//router.GET("/user/:id", usersController.GetUserById)
-	api.POST("/register", usersController.CreateUser)
+	//CRUD comments
+	//api.GET("/comment", commentsController.CreateComment)
+	//api.GET("/comment", commentsController.GetAllComment)
+	//api.GET("/comment", commentsController.GetCommentById)
+	//api.GET("/comment/:id", usersController.DeleteComment)
+	//api.GET("/comment/:id", usersController.UpdateComment)
+	//api.POST("/comment/:id/moderate", commentsController.Moderate)
 
-	api.POST("/login", usersController.LoginUser)
-
+	//CRUD users
 	api.GET("/user/:id", usersController.GetUserById)
+	api.GET("/user", usersController.GetAllUsers)
+	api.POST("/register", usersController.CreateUser)
+	api.POST("/login", usersController.LoginUser)
 	api.GET("/user/:id/posts", usersController.GetUserPosts)
+	//api.GET("/user/:id", usersController.DeletePost)
+	//api.GET("/user/:id", usersController.UpdatePost)
+
 	userRoutes := api.Group("/user").Use(AuthUser())
 	{
 		userRoutes.GET("/user/:id", usersController.GetUserById)
@@ -232,7 +405,7 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 	adminRoutes := api.Group("/admin").Use(AuthAdmin())
 	{
 		adminRoutes.GET("/user/:id", usersController.GetUserById)
-		adminRoutes.GET("/post", postsController.GetAllPosts)
+		adminRoutes.GET("/post", postsController.GetAll)
 	}
 
 	return HttpServer{

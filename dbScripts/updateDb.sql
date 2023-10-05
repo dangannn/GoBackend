@@ -76,21 +76,21 @@ INSERT INTO users(name, password, role, email)
 VALUES
     ('user2', '1234','user2','mail@mail.ru');
 
-DROP TABLE comments, users,posts;
--- DROP TABLE users;
+-- DROP TABLE comments, users, posts;
+DROP TABLE comments;
 --create comments
 
 INSERT INTO comments(text, post_id)
 VALUES
-    ('fitst comment', 1);
+    ('fitst comment', 10);
 
 INSERT INTO comments(text, post_id)
 VALUES
-    ('second comment', 1);
+    ('second comment', 10);
 
 INSERT INTO comments(text, post_id)
 VALUES
-    ('third comment', 2);
+    ('third comment', 10);
 
 -- create posts
 INSERT INTO posts(title, content, author_id)

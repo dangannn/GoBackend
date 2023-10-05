@@ -3,7 +3,6 @@ package repositories
 // PostRepository представляет репозиторий для работы с моделью Post.
 import (
 	"GoBackend/models"
-	"github.com/google/uuid"
 	"gorm.io/gorm"
 	"net/http"
 )
@@ -17,7 +16,6 @@ func NewPostRepository(db *gorm.DB) *PostRepository {
 	return &PostRepository{db}
 }
 
-// Create создает новый пост.
 func (r *PostRepository) Create(post *models.Post) (*models.Post, *models.ResponseError) {
 	err := r.db.Create(&post).Error
 	if err != nil {
@@ -29,28 +27,42 @@ func (r *PostRepository) Create(post *models.Post) (*models.Post, *models.Respon
 	return post, nil
 }
 
-// FindByID находит пост по его идентификатору.
-func (r *PostRepository) FindByID(id uuid.UUID) (*models.Post, error) {
-	var post models.Post
-	err := r.db.Where("id = ?", id).First(&post).Error
+func (r *PostRepository) GetById(id int) (*models.Post, *models.ResponseError) {
+	var post *models.Post
+	err := r.db.Where("id = ?", id).Find(&post).Error
 	if err != nil {
-		return nil, err
+		return nil, &models.ResponseError{
+			Message: err.Error(),
+			Status:  http.StatusInternalServerError,
+		}
 	}
-	return &post, nil
+	return post, nil
 }
 
-// Update обновляет существующий пост.
-func (r *PostRepository) Update(post *models.Post) error {
-	return r.db.Save(post).Error
+func (r *PostRepository) Delete(id int) *models.ResponseError {
+	err := r.db.Where("id = ?", id).Delete(&models.Post{}).Error
+	if err != nil {
+		return &models.ResponseError{
+			Message: err.Error(),
+			Status:  http.StatusInternalServerError,
+		}
+	}
+	return nil
 }
 
-// DeleteByID удаляет пост по его идентификатору.
-func (r *PostRepository) DeleteByID(id uint) error {
-	return r.db.Where("id = ?", id).Delete(&models.Post{}).Error
+func (r *PostRepository) Update(post *models.Post) (*models.Post, *models.ResponseError) {
+	err := r.db.Where("id = ?", post.Id).Updates(&post).Error
+	if err != nil {
+		return nil, &models.ResponseError{
+			Message: err.Error(),
+			Status:  http.StatusInternalServerError,
+		}
+	}
+	return post, nil
 }
 
-// GetAllPosts возвращает все посты.
-func (r *PostRepository) GetAllPosts() ([]*models.Post, *models.ResponseError) {
+// GetAll возвращает все посты.
+func (r *PostRepository) GetAll() ([]*models.Post, *models.ResponseError) {
 	var posts []*models.Post
 	err := r.db.Order("id desc").Find(&posts).Error
 	if err != nil {
@@ -62,7 +74,7 @@ func (r *PostRepository) GetAllPosts() ([]*models.Post, *models.ResponseError) {
 	return posts, nil
 }
 
-func (r *PostRepository) GetPostPage(page int) ([]*models.Post, *models.ResponseError) {
+func (r *PostRepository) GetPage(page int) ([]*models.Post, *models.ResponseError) {
 	var posts []*models.Post
 	err := r.db.Limit(3).Offset(3 * page).Find(&posts).Error
 	if err != nil {

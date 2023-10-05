@@ -17,18 +17,49 @@ func NewPostService(postsRepository *repositories.PostRepository) *PostService {
 	}
 }
 
-func (ps PostService) CreatePost(post *models.Post) (*models.Post, *models.ResponseError) {
+func (ps PostService) Create(post *models.Post) (*models.Post, *models.ResponseError) {
 	responseErr := validatePost(post)
 	if responseErr != nil {
 		return nil, responseErr
 	}
 	return ps.postsRepository.Create(post)
 }
-func (ps PostService) GetAllPosts() ([]*models.Post, *models.ResponseError) {
-	return ps.postsRepository.GetAllPosts()
+
+func (ps PostService) Delete(id string) *models.ResponseError {
+	idNum, err := strconv.Atoi(id)
+	if err != nil {
+		return &models.ResponseError{
+			Message: "Invalid id",
+			Status:  http.StatusBadRequest,
+		}
+	}
+	return ps.postsRepository.Delete(idNum)
 }
 
-func (ps PostService) GetPostPage(page string) ([]*models.Post, *models.ResponseError) {
+func (ps PostService) GetById(id string) (*models.Post, *models.ResponseError) {
+	idNum, err := strconv.Atoi(id)
+	if err != nil {
+		return nil, &models.ResponseError{
+			Message: "Invalid id",
+			Status:  http.StatusBadRequest,
+		}
+	}
+	return ps.postsRepository.GetById(idNum)
+}
+
+func (ps PostService) Update(post *models.Post) (*models.Post, *models.ResponseError) {
+	//responseErr := validatePost(post)
+	//if responseErr != nil {
+	//	return nil, responseErr
+	//}
+	return ps.postsRepository.Update(post)
+}
+
+func (ps PostService) GetAll() ([]*models.Post, *models.ResponseError) {
+	return ps.postsRepository.GetAll()
+}
+
+func (ps PostService) GetPage(page string) ([]*models.Post, *models.ResponseError) {
 	pageNum, err := strconv.Atoi(page)
 	if err != nil {
 		return nil, &models.ResponseError{
@@ -36,7 +67,7 @@ func (ps PostService) GetPostPage(page string) ([]*models.Post, *models.Response
 			Status:  http.StatusBadRequest,
 		}
 	}
-	return ps.postsRepository.GetPostPage(pageNum)
+	return ps.postsRepository.GetPage(pageNum)
 }
 
 func (ps PostService) GetComments(id string) (*[]models.Comment, *models.ResponseError) {
