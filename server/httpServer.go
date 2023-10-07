@@ -33,7 +33,7 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 	//comments layer
 	commentsRepository := repositories.NewCommentRepository(dbHandler)
 	commentsService := services.NewCommentService(commentsRepository)
-	//commentsController := controllers.NewCommentController(commentsService)
+	commentsController := controllers.NewCommentController(commentsService)
 
 	//post layer
 	postsRepository := repositories.NewPostRepository(dbHandler)
@@ -369,6 +369,8 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 
 	//email routes
 	api.GET("/email", emailsController.SendEmail)
+	api.GET("/add_view", emailsController.AddView)
+	api.GET("/add_new_comment", emailsController.AddNewComment)
 
 	//CRUD post & get comments & pagination
 	api.POST("/post", postsController.Create)
@@ -386,7 +388,8 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 	//api.GET("/comment", commentsController.GetCommentById)
 	//api.GET("/comment/:id", usersController.DeleteComment)
 	//api.GET("/comment/:id", usersController.UpdateComment)
-	//api.POST("/comment/:id/moderate", commentsController.Moderate)
+	api.GET("/comment/unapproved", commentsController.GetAllUnapproved)
+	api.POST("/comment/:id/moderate", commentsController.Moderate)
 
 	//CRUD users
 	api.GET("/user/:id", usersController.GetUserById)

@@ -18,3 +18,11 @@ func NewEmailController(emailsService *services.EmailService) *EmailsController 
 func (ec EmailsController) SendEmail(ctx *gin.Context) {
 	ec.emailsService.SendEmail(ctx)
 }
+
+func (ec EmailsController) AddView(ctx *gin.Context) {
+	ec.emailsService.AddView()
+}
+
+func (ec EmailsController) AddNewComment(ctx *gin.Context) {
+	ec.emailsService.AddNewComment()
+}

@@ -32,7 +32,6 @@ func InitDatabase(config *viper.Viper) *gorm.DB {
 	sqlDB.SetMaxOpenConns(maxOpenConnections)
 	sqlDB.SetConnMaxLifetime(connectionMaxLifetime)
 
-	db.AutoMigrate(&models.User{}, &models.Post{}, &models.Comment{})
+	db.AutoMigrate(&models.User{}, &models.Post{}, &models.Comment{}, &models.DailyStats{})
 	return db
-
 }

@@ -29,10 +29,10 @@ func (es EmailService) TaskScheduling() {
 	//* - любой день месяца (то есть не учитывается день месяца).
 	//* - любой месяц (то есть не учитывается месяц).
 	//* - любой день недели (то есть не учитывается день недели).
-
+	from := "nikonorovdan14@gmail.com"
 	// Запланировать задачу для отправки статистики каждый день в 9:00 утра
-	err := c.AddFunc("0 0 0 * * *", func() {
-		es.sendStatisticsEmail()
+	err := c.AddFunc("0 13 17 * * *", func() {
+		es.sendStatisticsEmail(from, from)
 	})
 	if err != nil {
 		log.Fatalf("Failed to schedule task: %v", err)
@@ -74,21 +74,41 @@ func (es EmailService) SendEmail(ctx *gin.Context) {
 	return
 }
 
-func (es EmailService) sendStatisticsEmail() {
-	fmt.Println("зашло")
+func (es EmailService) AddView() {
+	err := es.emailsRepository.AddView()
+	if err != nil {
+		log.Println("Ошибка добавления просмотра в статистику")
+
+	}
+}
+func (es EmailService) AddNewComment() {
+	err := es.emailsRepository.AddNewComment()
+	if err != nil {
+		log.Println("Ошибка добавления нового комментария в статистику")
+
+	}
+}
+
+func (es EmailService) sendStatisticsEmail(from, to string) {
+
+	stats, err := es.emailsRepository.GetDailyStats()
+	if err != nil {
+		log.Println("Ошибка получения статистики")
+	}
+
 	m := gomail.NewMessage()
 
 	// Set E-Mail sender
-	m.SetHeader("From", "nikonorovdan14@gmail.com")
+	m.SetHeader("From", from)
 
 	// Set E-Mail receivers
-	m.SetHeader("To", "nikonorovdan14@gmail.com")
+	m.SetHeader("To", to)
 
 	// Set E-Mail subject
-	m.SetHeader("Subject", "Gomail test subject")
+	m.SetHeader("Subject", "Daily stats")
 
 	// Set E-Mail body. You can set plain text or html with text/html
-	m.SetBody("text/plain", "This is Gomail test body")
+	m.SetBody("text/plain", fmt.Sprintf("Новых комментариев за день: %d \nПросмотров на комментариях: %d", stats.NewComments, stats.Views))
 
 	// Settings for SMTP server
 	d := gomail.NewDialer("smtp.gmail.com", 587, "nikonorovdan14@gmail.com", "oeyl hhlc vsev idet")
@@ -103,5 +123,9 @@ func (es EmailService) sendStatisticsEmail() {
 		panic(err)
 	}
 	log.Println("email sent")
+	err = es.emailsRepository.ResetDailyStats()
+	if err != nil {
+		log.Println("Ошибка сброса статистики")
+	}
 	return
 }

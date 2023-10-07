@@ -120,3 +120,11 @@ VALUES
 INSERT INTO posts(title, content, author_id)
 VALUES
     ('10 post', 'asdasdad',3);
+
+--daily_stats
+
+INSERT INTO daily_stats(new_comments, views)
+VALUES
+    (10, 9);
+
+DROP TABLE daily_stats
