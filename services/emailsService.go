@@ -42,7 +42,7 @@ func (es EmailService) TaskScheduling() {
 
 }
 
-func (es EmailService) SendEmail(ctx *gin.Context) {
+func (es EmailService) SendEmail(c *gin.Context) {
 	fmt.Println("зашло")
 	m := gomail.NewMessage()
 
@@ -70,7 +70,7 @@ func (es EmailService) SendEmail(ctx *gin.Context) {
 		fmt.Println(err)
 		panic(err)
 	}
-	ctx.JSON(http.StatusOK, "email sent")
+	c.JSON(http.StatusOK, "email sent")
 	return
 }
 

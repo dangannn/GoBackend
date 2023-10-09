@@ -22,11 +22,11 @@ func NewPostController(postService *services.PostService) *PostController {
 	}
 }
 
-func (pc PostController) Create(ctx *gin.Context) {
-	body, err := io.ReadAll(ctx.Request.Body)
+func (pc PostController) Create(c *gin.Context) {
+	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Println("Error while reading create post request body", err)
-		ctx.AbortWithError(http.StatusInternalServerError, err)
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -35,35 +35,35 @@ func (pc PostController) Create(ctx *gin.Context) {
 	err = json.Unmarshal(body, &post)
 	if err != nil {
 		log.Println("Error while unmarshaling create post request body", err)
-		ctx.AbortWithError(http.StatusInternalServerError, err)
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	response, responseErr := pc.postsService.Create(&post)
 	if responseErr != nil {
-		ctx.AbortWithStatusJSON(responseErr.Status, responseErr)
+		c.AbortWithStatusJSON(responseErr.Status, responseErr)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, response)
 }
 
-func (pc PostController) GetById(ctx *gin.Context) {
-	var id = ctx.Param("id")
+func (pc PostController) GetById(c *gin.Context) {
+	var id = c.Param("id")
 	response, responseErr := pc.postsService.GetById(id)
 	if responseErr != nil {
-		ctx.AbortWithStatusJSON(responseErr.Status, responseErr)
+		c.AbortWithStatusJSON(responseErr.Status, responseErr)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, response)
 }
 
-func (pc PostController) Update(ctx *gin.Context) {
-	body, err := io.ReadAll(ctx.Request.Body)
+func (pc PostController) Update(c *gin.Context) {
+	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Println("Error while reading create post request body", err)
-		ctx.AbortWithError(http.StatusInternalServerError, err)
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -77,14 +77,14 @@ func (pc PostController) Update(ctx *gin.Context) {
 	err = json.Unmarshal(body, &tmp)
 	if err != nil {
 		log.Println("Error while unmarshaling create post request body", err)
-		ctx.AbortWithError(http.StatusInternalServerError, err)
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	tmpPostId, err := strconv.Atoi(tmp.Id)
 	if err != nil {
 		fmt.Println(err)
-		ctx.Abort()
+		c.Abort()
 		return
 	}
 	post := models.Post{
@@ -95,53 +95,53 @@ func (pc PostController) Update(ctx *gin.Context) {
 
 	response, responseErr := pc.postsService.Update(&post)
 	if responseErr != nil {
-		ctx.AbortWithStatusJSON(responseErr.Status, responseErr)
+		c.AbortWithStatusJSON(responseErr.Status, responseErr)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, response)
 }
 
-func (pc PostController) Delete(ctx *gin.Context) {
-	var id = ctx.Param("id")
+func (pc PostController) Delete(c *gin.Context) {
+	var id = c.Param("id")
 	responseErr := pc.postsService.Delete(id)
 	if responseErr != nil {
-		ctx.AbortWithStatusJSON(responseErr.Status, responseErr)
+		c.AbortWithStatusJSON(responseErr.Status, responseErr)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, "post deleted")
+	c.JSON(http.StatusOK, "post deleted")
 }
 
-func (pc PostController) GetAll(ctx *gin.Context) {
+func (pc PostController) GetAll(c *gin.Context) {
 
 	response, responseErr := pc.postsService.GetAll()
 	if responseErr != nil {
-		ctx.AbortWithStatusJSON(responseErr.Status, responseErr)
+		c.AbortWithStatusJSON(responseErr.Status, responseErr)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, response)
 }
 
-func (pc PostController) GetPage(ctx *gin.Context) {
-	var page string = ctx.Param("page")
+func (pc PostController) GetPage(c *gin.Context) {
+	var page = c.Param("page")
 	response, responseErr := pc.postsService.GetPage(page)
 	if responseErr != nil {
-		ctx.AbortWithStatusJSON(responseErr.Status, responseErr)
+		c.AbortWithStatusJSON(responseErr.Status, responseErr)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, response)
 }
 
-func (pc PostController) GetApprovedComments(ctx *gin.Context) {
-	var id string = ctx.Param("id")
+func (pc PostController) GetApprovedComments(c *gin.Context) {
+	var id = c.Param("id")
 	response, responseErr := pc.postsService.GetApprovedComments(id)
 	if responseErr != nil {
-		ctx.AbortWithStatusJSON(responseErr.Status, responseErr)
+		c.AbortWithStatusJSON(responseErr.Status, responseErr)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, response)
 }

@@ -20,22 +20,22 @@ func NewUserController(usersService *services.UserService) *UserController {
 	}
 }
 
-func (uc UserController) GetAllUsers(ctx *gin.Context) {
+func (uc UserController) GetAllUsers(c *gin.Context) {
 
 	response, responseErr := uc.usersService.GetAllUsers()
 	if responseErr != nil {
-		ctx.AbortWithStatusJSON(responseErr.Status, responseErr)
+		c.AbortWithStatusJSON(responseErr.Status, responseErr)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, response)
 }
 
-func (uc UserController) CreateUser(ctx *gin.Context) {
-	body, err := io.ReadAll(ctx.Request.Body)
+func (uc UserController) CreateUser(c *gin.Context) {
+	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Println("Error while reading create user request body", err)
-		ctx.AbortWithError(http.StatusInternalServerError, err)
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -44,46 +44,46 @@ func (uc UserController) CreateUser(ctx *gin.Context) {
 	err = json.Unmarshal(body, &user)
 	if err != nil {
 		log.Println("Error while unmarshaling create post request body", err)
-		ctx.AbortWithError(http.StatusInternalServerError, err)
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	response, responseErr := uc.usersService.CreateUser(&user)
 	if responseErr != nil {
-		ctx.AbortWithStatusJSON(responseErr.Status, responseErr)
+		c.AbortWithStatusJSON(responseErr.Status, responseErr)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, response)
 }
 
-func (uc UserController) GetUserById(ctx *gin.Context) {
-	var id = ctx.Param("id")
+func (uc UserController) GetUserById(c *gin.Context) {
+	var id = c.Param("id")
 	response, responseErr := uc.usersService.GetUserById(id)
 	if responseErr != nil {
-		ctx.AbortWithStatusJSON(responseErr.Status, responseErr)
+		c.AbortWithStatusJSON(responseErr.Status, responseErr)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, response)
 }
-func (uc UserController) GetUserPosts(ctx *gin.Context) {
-	var id = ctx.Param("id")
+func (uc UserController) GetUserPosts(c *gin.Context) {
+	var id = c.Param("id")
 	response, responseErr := uc.usersService.GetUserPosts(id)
 	if responseErr != nil {
-		ctx.AbortWithStatusJSON(responseErr.Status, responseErr)
+		c.AbortWithStatusJSON(responseErr.Status, responseErr)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, response)
 }
 
-func (uc UserController) LoginUser(ctx *gin.Context) {
-	log.Println(ctx.Request)
-	body, err := io.ReadAll(ctx.Request.Body)
+func (uc UserController) LoginUser(c *gin.Context) {
+	log.Println(c.Request)
+	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Println("Error while reading login user request body", err)
-		ctx.AbortWithError(http.StatusInternalServerError, err)
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -92,15 +92,15 @@ func (uc UserController) LoginUser(ctx *gin.Context) {
 	err = json.Unmarshal(body, &loginRequest)
 	if err != nil {
 		log.Println("Error while unmarshaling create post request body", err)
-		ctx.AbortWithError(http.StatusInternalServerError, err)
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	response, responseErr := uc.usersService.Login(&loginRequest)
 	if responseErr != nil {
-		ctx.AbortWithStatusJSON(responseErr.Status, responseErr)
+		c.AbortWithStatusJSON(responseErr.Status, responseErr)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, response)
 }

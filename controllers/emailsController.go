@@ -15,14 +15,14 @@ func NewEmailController(emailsService *services.EmailService) *EmailsController 
 	}
 }
 
-func (ec EmailsController) SendEmail(ctx *gin.Context) {
-	ec.emailsService.SendEmail(ctx)
+func (ec EmailsController) SendEmail(c *gin.Context) {
+	ec.emailsService.SendEmail(c)
 }
 
-func (ec EmailsController) AddView(ctx *gin.Context) {
+func (ec EmailsController) AddView(c *gin.Context) {
 	ec.emailsService.AddView()
 }
 
-func (ec EmailsController) AddNewComment(ctx *gin.Context) {
+func (ec EmailsController) AddNewComment(c *gin.Context) {
 	ec.emailsService.AddNewComment()
 }

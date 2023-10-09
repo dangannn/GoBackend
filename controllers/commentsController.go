@@ -23,11 +23,11 @@ func NewCommentController(commentService *services.CommentService) *CommentContr
 	}
 }
 
-func (cc CommentController) Create(ctx *gin.Context) {
-	body, err := io.ReadAll(ctx.Request.Body)
+func (cc CommentController) Create(c *gin.Context) {
+	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Println("Error while reading create comment request body", err)
-		ctx.AbortWithError(http.StatusInternalServerError, err)
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -49,7 +49,7 @@ func (cc CommentController) Create(ctx *gin.Context) {
 	tmpPostId, err := strconv.Atoi(tmp.PostId)
 	if err != nil {
 		fmt.Println(err)
-		ctx.Abort()
+		c.Abort()
 		return
 	}
 	receivedData := models.Comment{
@@ -64,30 +64,30 @@ func (cc CommentController) Create(ctx *gin.Context) {
 
 	response, responseErr := cc.commentsService.Create(&receivedData)
 	if responseErr != nil {
-		ctx.AbortWithStatusJSON(responseErr.Status, responseErr)
+		c.AbortWithStatusJSON(responseErr.Status, responseErr)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, response)
 }
 
-func (cc CommentController) GetAllUnapproved(ctx *gin.Context) {
+func (cc CommentController) GetAllUnapproved(c *gin.Context) {
 
 	response, responseErr := cc.commentsService.GetAllUnapproved()
 	if responseErr != nil {
-		ctx.AbortWithStatusJSON(responseErr.Status, responseErr)
+		c.AbortWithStatusJSON(responseErr.Status, responseErr)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, response)
 }
 
-func (cc CommentController) Moderate(ctx *gin.Context) {
-	var id = ctx.Param("id")
-	body, err := io.ReadAll(ctx.Request.Body)
+func (cc CommentController) Moderate(c *gin.Context) {
+	var id = c.Param("id")
+	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Println("Error while reading moderation comment body", err)
-		ctx.AbortWithError(http.StatusInternalServerError, err)
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
@@ -97,15 +97,15 @@ func (cc CommentController) Moderate(ctx *gin.Context) {
 	log.Println("com contr", comment)
 	if err != nil {
 		log.Println("Error while unmarshalling create post request body", err)
-		ctx.AbortWithError(http.StatusInternalServerError, err)
+		c.AbortWithError(http.StatusInternalServerError, err)
 		return
 	}
 
 	responseErr := cc.commentsService.Moderate(id, &comment)
 	if responseErr != nil {
-		ctx.AbortWithStatusJSON(responseErr.Status, responseErr)
+		c.AbortWithStatusJSON(responseErr.Status, responseErr)
 		return
 	}
 
-	ctx.JSON(http.StatusOK, "comment moderated")
+	c.JSON(http.StatusOK, "comment moderated")
 }
