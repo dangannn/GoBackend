@@ -51,7 +51,7 @@ func (r *PostRepository) Delete(id int) *models.ResponseError {
 }
 
 func (r *PostRepository) Update(post *models.Post) (*models.Post, *models.ResponseError) {
-	err := r.db.Where("id = ?", post.Id).Updates(&post).Error
+	err := r.db.Model(&models.Post{}).Where("id = ?", post.Id).Updates(&post).Error
 	if err != nil {
 		return nil, &models.ResponseError{
 			Message: err.Error(),
@@ -86,9 +86,9 @@ func (r *PostRepository) GetPage(page int) ([]*models.Post, *models.ResponseErro
 	return posts, nil
 }
 
-func (r *PostRepository) GetComments(id string) (*[]models.Comment, *models.ResponseError) {
+func (r *PostRepository) GetApprovedComments(id string) (*[]models.Comment, *models.ResponseError) {
 	var post models.Post
-	err := r.db.Preload("Comments").Where("id = ?", id).First(&post).Error
+	err := r.db.Preload("Comments", "approved = true").Where("id = ?", id).First(&post).Error
 	if err != nil {
 		return nil, &models.ResponseError{
 			Message: err.Error(),

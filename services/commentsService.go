@@ -39,6 +39,15 @@ func (cs CommentService) Moderate(id string, comment *models.Comment) *models.Re
 	return cs.commentsRepository.Delete(idNum)
 }
 
+func (cs CommentService) ModerateWs(id uint, comment *models.Comment) *models.ResponseError {
+	idNum := int(id)
+
+	if comment.Approved {
+		return cs.commentsRepository.Moderate(idNum, comment)
+	}
+	return cs.commentsRepository.Delete(idNum)
+}
+
 func (cs CommentService) GetAllUnapproved() ([]*models.Comment, *models.ResponseError) {
 	return cs.commentsRepository.GetAllUnapproved()
 }
@@ -46,7 +55,7 @@ func (cs CommentService) GetAllUnapproved() ([]*models.Comment, *models.Response
 func validateComment(post *models.Comment) *models.ResponseError {
 	if post.Text == "" {
 		return &models.ResponseError{
-			Message: "Invalid title",
+			Message: "Invalid text",
 			Status:  http.StatusBadRequest,
 		}
 	}

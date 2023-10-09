@@ -4,10 +4,12 @@ import (
 	"GoBackend/models"
 	"GoBackend/services"
 	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 type PostController struct {
@@ -65,13 +67,30 @@ func (pc PostController) Update(ctx *gin.Context) {
 		return
 	}
 
-	var post models.Post
+	type tmpPost struct {
+		Id      string
+		Title   string
+		Content string
+	}
+	var tmp tmpPost
 
-	err = json.Unmarshal(body, &post)
+	err = json.Unmarshal(body, &tmp)
 	if err != nil {
 		log.Println("Error while unmarshaling create post request body", err)
 		ctx.AbortWithError(http.StatusInternalServerError, err)
 		return
+	}
+
+	tmpPostId, err := strconv.Atoi(tmp.Id)
+	if err != nil {
+		fmt.Println(err)
+		ctx.Abort()
+		return
+	}
+	post := models.Post{
+		Id:      uint(tmpPostId),
+		Title:   tmp.Title,
+		Content: tmp.Content,
 	}
 
 	response, responseErr := pc.postsService.Update(&post)
@@ -116,9 +135,9 @@ func (pc PostController) GetPage(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, response)
 }
 
-func (pc PostController) GetComments(ctx *gin.Context) {
+func (pc PostController) GetApprovedComments(ctx *gin.Context) {
 	var id string = ctx.Param("id")
-	response, responseErr := pc.postsService.GetComments(id)
+	response, responseErr := pc.postsService.GetApprovedComments(id)
 	if responseErr != nil {
 		ctx.AbortWithStatusJSON(responseErr.Status, responseErr)
 		return

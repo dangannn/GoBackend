@@ -48,10 +48,6 @@ func (ps PostService) GetById(id string) (*models.Post, *models.ResponseError) {
 }
 
 func (ps PostService) Update(post *models.Post) (*models.Post, *models.ResponseError) {
-	//responseErr := validatePost(post)
-	//if responseErr != nil {
-	//	return nil, responseErr
-	//}
 	return ps.postsRepository.Update(post)
 }
 
@@ -70,8 +66,8 @@ func (ps PostService) GetPage(page string) ([]*models.Post, *models.ResponseErro
 	return ps.postsRepository.GetPage(pageNum)
 }
 
-func (ps PostService) GetComments(id string) (*[]models.Comment, *models.ResponseError) {
-	return ps.postsRepository.GetComments(id)
+func (ps PostService) GetApprovedComments(id string) (*[]models.Comment, *models.ResponseError) {
+	return ps.postsRepository.GetApprovedComments(id)
 }
 
 func validatePost(post *models.Post) *models.ResponseError {

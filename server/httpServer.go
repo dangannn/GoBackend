@@ -56,7 +56,7 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 	// Middleware CORS
 	router.Use(func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "http://127.0.0.1:5173")
-		c.Header("Access-Control-Allow-Methods", "*")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
 		c.Header("Access-Control-Allow-Headers", "Authorization, Origin, Content-Type, Cookie, X-CSRF-Token, Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers")
 		c.Header("Access-Control-Allow-Credentials", "true") // Разрешить отправку кук с запросом
 
@@ -159,8 +159,6 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 			}
 
 			// Выполнение вставки данных в базу данных
-			//log.Println(receivedData.Id)
-			//log.Println(receivedData.Id == 0)
 			if receivedData.Id == 0 {
 				response, responseErr := postsService.Create(receivedData)
 				if responseErr != nil {
@@ -271,18 +269,105 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 		}
 	})
 
-	router.GET("/ws/post/:id/comments", func(c *gin.Context) {
-		id := c.Param("id")
-		log.Println(id)
+	//router.GET("/ws/post/:id/comments", func(c *gin.Context) {
+	//	id := c.Param("id")
+	//	log.Println(id)
+	//	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	//	if err != nil {
+	//		return
+	//	}
+	//
+	//	defer conn.Close()
+	//
+	//	connections[conn] = true
+	//	comments, _ := postsService.GetApprovedComments(id)
+	//	jsonData, err := json.Marshal(comments)
+	//	if err != nil {
+	//		log.Println(err)
+	//		return
+	//	}
+	//	err = conn.WriteMessage(websocket.TextMessage, jsonData)
+	//	if err != nil {
+	//		log.Println(err)
+	//		return
+	//	}
+	//	for {
+	//		messageType, p, err := conn.ReadMessage()
+	//		if err != nil {
+	//			log.Println(err)
+	//			return
+	//		}
+	//
+	//		type TmpComment struct {
+	//			Id        uint
+	//			Text      string
+	//			PostId    string
+	//			Approved  bool
+	//			AuthorId  uint
+	//			CreatedAt time.Time
+	//		}
+	//		var tmp TmpComment
+	//
+	//		err = json.Unmarshal(p, &tmp)
+	//		if err != nil {
+	//			log.Println(err)
+	//			return
+	//		}
+	//		tmpPostId, err := strconv.Atoi(tmp.PostId)
+	//		if err != nil {
+	//			fmt.Println(err)
+	//			c.Abort()
+	//			return
+	//		}
+	//		receivedData := models.Comment{
+	//			Id:        tmp.Id,
+	//			Text:      tmp.Text,
+	//			PostId:    uint(tmpPostId),
+	//			Approved:  tmp.Approved,
+	//			AuthorId:  tmp.AuthorId,
+	//			CreatedAt: tmp.CreatedAt,
+	//		}
+	//		log.Println("измененные", receivedData)
+	//
+	//		// Выполнение вставки данных в базу данных
+	//		response, responseErr := commentsService.Create(&receivedData)
+	//		if responseErr != nil {
+	//			c.AbortWithStatusJSON(responseErr.Status, responseErr)
+	//			return
+	//		}
+	//		jsonData, err := json.Marshal(response)
+	//		if err != nil {
+	//			log.Println(err)
+	//			return
+	//		}
+	//
+	//		// Отправка данных обратно клиенту через вебсокет
+	//		for conn := range connections {
+	//			err := conn.WriteMessage(websocket.TextMessage, []byte("New comment created"))
+	//			if err != nil {
+	//				fmt.Println(err)
+	//				conn.Close()
+	//				delete(connections, conn)
+	//			}
+	//			err = conn.WriteMessage(messageType, jsonData)
+	//			if err != nil {
+	//				fmt.Println(err)
+	//				conn.Close()
+	//				delete(connections, conn)
+	//			}
+	//		}
+	//	}
+	//})
+
+	router.GET("/ws/moderation", func(c *gin.Context) {
 		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 		if err != nil {
 			return
 		}
 
 		defer conn.Close()
-
 		connections[conn] = true
-		comments, _ := postsService.GetComments(id)
+		comments, _ := commentsService.GetAllUnapproved()
 		jsonData, err := json.Marshal(comments)
 		if err != nil {
 			log.Println(err)
@@ -294,68 +379,35 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 			return
 		}
 		for {
-			messageType, p, err := conn.ReadMessage()
+			_, p, err := conn.ReadMessage()
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			var receivedData *models.Comment
+
+			err = json.Unmarshal(p, &receivedData)
 			if err != nil {
 				log.Println(err)
 				return
 			}
 
-			type TmpComment struct {
-				Id        uint
-				Text      string
-				PostId    string
-				Approved  bool
-				AuthorId  uint
-				CreatedAt time.Time
-			}
-			var tmp TmpComment
-
-			err = json.Unmarshal(p, &tmp)
-			if err != nil {
-				log.Println(err)
-				return
-			}
-			tmpPostId, err := strconv.Atoi(tmp.PostId)
-			if err != nil {
-				fmt.Println(err)
-				c.Abort()
-				return
-			}
-			receivedData := models.Comment{
-				Id:        tmp.Id,
-				Text:      tmp.Text,
-				PostId:    uint(tmpPostId),
-				Approved:  tmp.Approved,
-				AuthorId:  tmp.AuthorId,
-				CreatedAt: tmp.CreatedAt,
-			}
-			log.Println("измененные", receivedData)
-
-			// Выполнение вставки данных в базу данных
-			response, responseErr := commentsService.Create(&receivedData)
-			if responseErr != nil {
-				c.AbortWithStatusJSON(responseErr.Status, responseErr)
-				return
-			}
-			jsonData, err := json.Marshal(response)
-			if err != nil {
-				log.Println(err)
-				return
-			}
-
-			// Отправка данных обратно клиенту через вебсокет
-			for conn := range connections {
-				err := conn.WriteMessage(websocket.TextMessage, []byte("New comment created"))
-				if err != nil {
-					fmt.Println(err)
-					conn.Close()
-					delete(connections, conn)
-				}
-				err = conn.WriteMessage(messageType, jsonData)
-				if err != nil {
-					fmt.Println(err)
-					conn.Close()
-					delete(connections, conn)
+			if p != nil {
+				commentsService.ModerateWs(receivedData.Id, receivedData)
+				// Отправка данных обратно клиенту через вебсокет
+				for conn := range connections {
+					var responseAlert []byte
+					if receivedData.Approved == true {
+						responseAlert = []byte("New comment created")
+					} else {
+						responseAlert = []byte("Comment declined")
+					}
+					err := conn.WriteMessage(websocket.TextMessage, responseAlert)
+					if err != nil {
+						fmt.Println(err)
+						conn.Close()
+						delete(connections, conn)
+					}
 				}
 			}
 		}
@@ -372,15 +424,14 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 	//CRUD post & get comments & pagination
 	api.POST("/post", postsController.Create)
 	api.GET("/post/:id", postsController.GetById)
-	api.GET("/post/:id/delete", postsController.Delete)
-	api.GET("/post/:id/update", postsController.Update)
+	api.DELETE("/post/:id/delete", postsController.Delete)
+	api.PATCH("/post/:id/update", postsController.Update)
 	api.GET("/post/all", postsController.GetAll)
-	api.GET("/post/:id/comments", postsController.GetComments)
+	api.GET("/post/:id/comments", postsController.GetApprovedComments)
 	api.GET("/posts/:page/page", postsController.GetPage)
-	//api.POST("/post/:id/checked", postsController.AddCheck)
 
 	//CRUD comments
-	//api.GET("/comment", commentsController.CreateComment)
+	api.POST("/comment", commentsController.Create)
 	//api.GET("/comment", commentsController.GetAllComment)
 	//api.GET("/comment", commentsController.GetCommentById)
 	//api.GET("/comment/:id", usersController.DeleteComment)
