@@ -127,4 +127,8 @@ INSERT INTO daily_stats(new_comments, views)
 VALUES
     (10, 9);
 
-DROP TABLE daily_stats
+DROP TABLE daily_stats;
+
+
+
+DROP TABLE comments, posts

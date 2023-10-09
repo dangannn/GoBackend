@@ -300,9 +300,6 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 				return
 			}
 
-			// Обработка и анализ входящих данных от клиента
-			//var receivedData *models.Comment
-
 			type TmpComment struct {
 				Id        uint
 				Text      string
