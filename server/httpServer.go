@@ -109,7 +109,7 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 		connections[conn] = true
 
 		//Redis
-		redisClient := initRedis()
+		redisClient := initRedis(config)
 		defer redisClient.Close()
 		// Получение значения из Redis
 

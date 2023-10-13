@@ -18,10 +18,6 @@ func NewCommentService(commentsRepository *repositories.CommentRepository) *Comm
 }
 
 func (cs CommentService) Create(comment *models.Comment) (*models.Comment, *models.ResponseError) {
-	responseErr := validateComment(comment)
-	if responseErr != nil {
-		return nil, responseErr
-	}
 	return cs.commentsRepository.Create(comment)
 }
 
@@ -50,15 +46,4 @@ func (cs CommentService) ModerateWs(id uint, comment *models.Comment) *models.Re
 
 func (cs CommentService) GetAllUnapproved() ([]*models.Comment, *models.ResponseError) {
 	return cs.commentsRepository.GetAllUnapproved()
-}
-
-func validateComment(post *models.Comment) *models.ResponseError {
-	if post.Text == "" {
-		return &models.ResponseError{
-			Message: "Invalid text",
-			Status:  http.StatusBadRequest,
-		}
-	}
-	//TODO - other checks
-	return nil
 }

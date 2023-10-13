@@ -26,9 +26,9 @@ session = "mysession"
 store = "secrete"
 
 ###############################################################################
-# Security
-
-[security]
-
-secrete_key = "secrete_key"
+# Redis
+[redis]
+addr = "localhost:6379"
+password = ""
+DB = 0
 ###############################################################################
