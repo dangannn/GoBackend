@@ -17,4 +17,14 @@ driver_name = "postgres"
 [http]
 
 server_address = ":8080"
+cors_origin = "http://127.0.0.1:5173"
+cors_methods = "GET, POST, PATCH, DELETE, OPTIONS"
+cors_headers = "Authorization, Origin, Content-Type, Cookie, X-CSRF-Token, Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers"
+cors_credentials = "true"
+###############################################################################
+# Security
+
+[security]
+
+secrete_key = "secrete_key"
 ###############################################################################

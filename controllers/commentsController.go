@@ -94,7 +94,6 @@ func (cc CommentController) Moderate(c *gin.Context) {
 	var comment models.Comment
 
 	err = json.Unmarshal(body, &comment)
-	log.Println("com contr", comment)
 	if err != nil {
 		log.Println("Error while unmarshalling create post request body", err)
 		c.AbortWithError(http.StatusInternalServerError, err)

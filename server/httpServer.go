@@ -55,10 +55,10 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 
 	// Middleware CORS
 	router.Use(func(c *gin.Context) {
-		c.Header("Access-Control-Allow-Origin", "http://127.0.0.1:5173")
-		c.Header("Access-Control-Allow-Methods", "GET, POST, PATCH, DELETE, OPTIONS")
-		c.Header("Access-Control-Allow-Headers", "Authorization, Origin, Content-Type, Cookie, X-CSRF-Token, Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers")
-		c.Header("Access-Control-Allow-Credentials", "true") // Разрешить отправку кук с запросом
+		c.Header("Access-Control-Allow-Origin", config.GetString("http.cors_origin"))
+		c.Header("Access-Control-Allow-Methods", config.GetString("http.cors_methods"))
+		c.Header("Access-Control-Allow-Headers", config.GetString("http.cors_headers"))
+		c.Header("Access-Control-Allow-Credentials", config.GetString("http.cors_credentials")) // Разрешить отправку кук с запросом
 
 		// Позволяем предварительные запросы (preflight) OPTIONS
 		if c.Request.Method == "OPTIONS" {
@@ -218,7 +218,7 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 					c.AbortWithStatusJSON(responseErr.Status, responseErr)
 					return
 				}
-				log.Println("удалено")
+
 				//TODO clear redis & response to client
 
 				currentValue, err := redisClient.Get(c, key).Result()
@@ -258,12 +258,6 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 						conn.Close()
 						delete(connections, conn)
 					}
-					//err = conn.WriteMessage(messageType, jsonData)
-					//if err != nil {
-					//	fmt.Println(err)
-					//	conn.Close()
-					//	delete(connections, conn)
-					//}
 				}
 			}
 		}
@@ -432,10 +426,6 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 
 	//CRUD comments
 	api.POST("/comment", commentsController.Create)
-	//api.GET("/comment", commentsController.GetAllComment)
-	//api.GET("/comment", commentsController.GetCommentById)
-	//api.GET("/comment/:id", usersController.DeleteComment)
-	//api.GET("/comment/:id", usersController.UpdateComment)
 	api.GET("/comment/unapproved", commentsController.GetAllUnapproved)
 	api.POST("/comment/:id/moderate", commentsController.Moderate)
 
@@ -445,18 +435,22 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 	api.POST("/register", usersController.CreateUser)
 	api.POST("/login", usersController.LoginUser)
 	api.GET("/user/:id/posts", usersController.GetUserPosts)
-	//api.GET("/user/:id", usersController.DeletePost)
-	//api.GET("/user/:id", usersController.UpdatePost)
 
-	userRoutes := api.Group("/user").Use(AuthUser())
-	{
-		userRoutes.GET("/user/:id", usersController.GetUserById)
-	}
+	//userRoutes := api.Group("/user").Use(Auth())
+	//{
+	//	userRoutes.POST("/post", postsController.Create)
+	//	userRoutes.GET("/post", postsController.GetAll)
+	//	userRoutes.GET("/post/:id", postsController.GetById)
+	//	userRoutes.DELETE("/post/:id/delete", postsController.Delete)
+	//	userRoutes.PATCH("/post/:id/update", postsController.Update)
+	//	userRoutes.GET("/user/:id", usersController.GetUserById)
+	//}
 
 	adminRoutes := api.Group("/admin").Use(AuthAdmin())
 	{
 		adminRoutes.GET("/user/:id", usersController.GetUserById)
-		adminRoutes.GET("/post", postsController.GetAll)
+		adminRoutes.POST("/comment/:id/moderate", commentsController.Moderate)
+
 	}
 
 	return HttpServer{
@@ -472,48 +466,48 @@ func (hs HttpServer) Start() {
 	}
 }
 
-func AuthUser() gin.HandlerFunc {
-	return func(context *gin.Context) {
+func Auth() gin.HandlerFunc {
+	return func(c *gin.Context) {
 		type CustomClaims struct {
 			Role string `json:"role"`
 			Id   int    `json:"id"`
 			jwt.RegisteredClaims
 		}
-		tokenString := context.GetHeader("Authorization")
+		tokenString := c.GetHeader("Authorization")
 		if tokenString == "" {
-			context.JSON(401, gin.H{"error": "request does not contain an access token"})
-			context.Abort()
+			c.JSON(401, gin.H{"error": "request does not contain an access token"})
+			c.Abort()
 			return
 		}
 		token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
 			return []byte("secrete-key"), nil
 		}, jwt.WithLeeway(2*time.Second))
 
-		if claims, ok := token.Claims.(*CustomClaims); ok && token.Valid && claims.Role == "user" {
+		if claims, ok := token.Claims.(*CustomClaims); ok && token.Valid {
 			log.Println("role" + claims.Role)
 		} else {
 			log.Println(err)
 		}
 		if err != nil {
-			context.JSON(401, gin.H{"error": err.Error()})
-			context.Abort()
+			c.JSON(401, gin.H{"error": err.Error()})
+			c.Abort()
 			return
 		}
-		context.Next()
+		c.Next()
 	}
 }
 
 func AuthAdmin() gin.HandlerFunc {
-	return func(context *gin.Context) {
+	return func(c *gin.Context) {
 		type CustomClaims struct {
 			Role string `json:"role"`
 			Id   int    `json:"id"`
 			jwt.RegisteredClaims
 		}
-		tokenString := context.GetHeader("Authorization")
+		tokenString := c.GetHeader("Authorization")
 		if tokenString == "" {
-			context.JSON(401, gin.H{"error": "request does not contain an access token"})
-			context.Abort()
+			c.JSON(401, gin.H{"error": "request does not contain an access token"})
+			c.Abort()
 			return
 		}
 		token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
@@ -523,14 +517,14 @@ func AuthAdmin() gin.HandlerFunc {
 		if claims, ok := token.Claims.(*CustomClaims); ok && token.Valid && claims.Role == "admin" {
 			log.Println("role" + claims.Role)
 		} else {
-			context.JSON(401, gin.H{"error": "wrong role"})
-			context.Abort()
+			c.JSON(401, gin.H{"error": "wrong role"})
+			c.Abort()
 		}
 		if err != nil {
-			context.JSON(401, gin.H{"error": err.Error()})
-			context.Abort()
+			c.JSON(401, gin.H{"error": err.Error()})
+			c.Abort()
 			return
 		}
-		context.Next()
+		c.Next()
 	}
 }

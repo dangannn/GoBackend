@@ -31,7 +31,7 @@ func (es EmailService) TaskScheduling() {
 	//* - любой день недели (то есть не учитывается день недели).
 	from := "nikonorovdan14@gmail.com"
 	// Запланировать задачу для отправки статистики каждый день в 9:00 утра
-	err := c.AddFunc("0 13 17 * * *", func() {
+	err := c.AddFunc("0 34 23 * * *", func() {
 		es.sendStatisticsEmail(from, from)
 	})
 	if err != nil {
