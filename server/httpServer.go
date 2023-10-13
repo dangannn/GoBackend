@@ -92,6 +92,7 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 		WriteBufferSize: 1024,
 		CheckOrigin: func(r *http.Request) bool {
 			origin := r.Header.Get("Origin")
+			// TODO check for all from cfg
 			return origin == "http://127.0.0.1:5173" || origin == "http://127.0.0.1:8080"
 		},
 	}
@@ -263,96 +264,6 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 		}
 	})
 
-	//router.GET("/ws/post/:id/comments", func(c *gin.Context) {
-	//	id := c.Param("id")
-	//	log.Println(id)
-	//	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
-	//	if err != nil {
-	//		return
-	//	}
-	//
-	//	defer conn.Close()
-	//
-	//	connections[conn] = true
-	//	comments, _ := postsService.GetApprovedComments(id)
-	//	jsonData, err := json.Marshal(comments)
-	//	if err != nil {
-	//		log.Println(err)
-	//		return
-	//	}
-	//	err = conn.WriteMessage(websocket.TextMessage, jsonData)
-	//	if err != nil {
-	//		log.Println(err)
-	//		return
-	//	}
-	//	for {
-	//		messageType, p, err := conn.ReadMessage()
-	//		if err != nil {
-	//			log.Println(err)
-	//			return
-	//		}
-	//
-	//		type TmpComment struct {
-	//			Id        uint
-	//			Text      string
-	//			PostId    string
-	//			Approved  bool
-	//			AuthorId  uint
-	//			CreatedAt time.Time
-	//		}
-	//		var tmp TmpComment
-	//
-	//		err = json.Unmarshal(p, &tmp)
-	//		if err != nil {
-	//			log.Println(err)
-	//			return
-	//		}
-	//		tmpPostId, err := strconv.Atoi(tmp.PostId)
-	//		if err != nil {
-	//			fmt.Println(err)
-	//			c.Abort()
-	//			return
-	//		}
-	//		receivedData := models.Comment{
-	//			Id:        tmp.Id,
-	//			Text:      tmp.Text,
-	//			PostId:    uint(tmpPostId),
-	//			Approved:  tmp.Approved,
-	//			AuthorId:  tmp.AuthorId,
-	//			CreatedAt: tmp.CreatedAt,
-	//		}
-	//		log.Println("измененные", receivedData)
-	//
-	//		// Выполнение вставки данных в базу данных
-	//		response, responseErr := commentsService.Create(&receivedData)
-	//		if responseErr != nil {
-	//			c.AbortWithStatusJSON(responseErr.Status, responseErr)
-	//			return
-	//		}
-	//		jsonData, err := json.Marshal(response)
-	//		if err != nil {
-	//			log.Println(err)
-	//			return
-	//		}
-	//
-	//		// Отправка данных обратно клиенту через вебсокет
-	//		for conn := range connections {
-	//			err := conn.WriteMessage(websocket.TextMessage, []byte("New comment created"))
-	//			if err != nil {
-	//				fmt.Println(err)
-	//				conn.Close()
-	//				delete(connections, conn)
-	//			}
-	//			err = conn.WriteMessage(messageType, jsonData)
-	//			if err != nil {
-	//				fmt.Println(err)
-	//				conn.Close()
-	//				delete(connections, conn)
-	//			}
-	//		}
-	//	}
-	//})
-
 	router.GET("/ws/moderation", func(c *gin.Context) {
 		conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 		if err != nil {
@@ -430,25 +341,15 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 	api.POST("/comment/:id/moderate", commentsController.Moderate)
 
 	//CRUD users
-	api.GET("/user/:id", usersController.GetUserById)
-	api.GET("/user", usersController.GetAllUsers)
-	api.POST("/register", usersController.CreateUser)
-	api.POST("/login", usersController.LoginUser)
+	api.GET("/user/:id", usersController.GetById)
+	api.GET("/user", usersController.GetAll)
+	api.POST("/register", usersController.Create)
+	api.POST("/login", usersController.Login)
 	api.GET("/user/:id/posts", usersController.GetUserPosts)
-
-	//userRoutes := api.Group("/user").Use(Auth())
-	//{
-	//	userRoutes.POST("/post", postsController.Create)
-	//	userRoutes.GET("/post", postsController.GetAll)
-	//	userRoutes.GET("/post/:id", postsController.GetById)
-	//	userRoutes.DELETE("/post/:id/delete", postsController.Delete)
-	//	userRoutes.PATCH("/post/:id/update", postsController.Update)
-	//	userRoutes.GET("/user/:id", usersController.GetUserById)
-	//}
 
 	adminRoutes := api.Group("/admin").Use(AuthAdmin())
 	{
-		adminRoutes.GET("/user/:id", usersController.GetUserById)
+		adminRoutes.GET("/user/:id", usersController.GetById)
 		adminRoutes.POST("/comment/:id/moderate", commentsController.Moderate)
 
 	}

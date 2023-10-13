@@ -20,9 +20,9 @@ func NewUserController(usersService *services.UserService) *UserController {
 	}
 }
 
-func (uc UserController) GetAllUsers(c *gin.Context) {
+func (uc UserController) GetAll(c *gin.Context) {
 
-	response, responseErr := uc.usersService.GetAllUsers()
+	response, responseErr := uc.usersService.GetAll()
 	if responseErr != nil {
 		c.AbortWithStatusJSON(responseErr.Status, responseErr)
 		return
@@ -31,7 +31,7 @@ func (uc UserController) GetAllUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-func (uc UserController) CreateUser(c *gin.Context) {
+func (uc UserController) Create(c *gin.Context) {
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Println("Error while reading create user request body", err)
@@ -48,7 +48,7 @@ func (uc UserController) CreateUser(c *gin.Context) {
 		return
 	}
 
-	response, responseErr := uc.usersService.CreateUser(&user)
+	response, responseErr := uc.usersService.Create(&user)
 	if responseErr != nil {
 		c.AbortWithStatusJSON(responseErr.Status, responseErr)
 		return
@@ -57,9 +57,9 @@ func (uc UserController) CreateUser(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-func (uc UserController) GetUserById(c *gin.Context) {
+func (uc UserController) GetById(c *gin.Context) {
 	var id = c.Param("id")
-	response, responseErr := uc.usersService.GetUserById(id)
+	response, responseErr := uc.usersService.GetById(id)
 	if responseErr != nil {
 		c.AbortWithStatusJSON(responseErr.Status, responseErr)
 		return
@@ -78,8 +78,7 @@ func (uc UserController) GetUserPosts(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-func (uc UserController) LoginUser(c *gin.Context) {
-	log.Println(c.Request)
+func (uc UserController) Login(c *gin.Context) {
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		log.Println("Error while reading login user request body", err)

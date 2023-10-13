@@ -21,22 +21,18 @@ func NewUserService(usersRepository *repositories.UserRepository) *UserService {
 	}
 }
 
-func (us UserService) CreateUser(user *models.User) (*models.User, *models.ResponseError) {
-	responseErr := validateUser(user)
-	if responseErr != nil {
-		return nil, responseErr
-	}
+func (us UserService) Create(user *models.User) (*models.User, *models.ResponseError) {
 	//hashing password
 	HashPassword(user)
 
-	return us.usersRepository.CreateUser(user)
+	return us.usersRepository.Create(user)
 }
 
-func (us UserService) GetAllUsers() ([]*models.User, *models.ResponseError) {
-	return us.usersRepository.GetAllUsers()
+func (us UserService) GetAll() ([]*models.User, *models.ResponseError) {
+	return us.usersRepository.GetAll()
 }
 
-func (us UserService) GetUserById(id string) (*models.User, *models.ResponseError) {
+func (us UserService) GetById(id string) (*models.User, *models.ResponseError) {
 	idNum, err := strconv.Atoi(id)
 	if err != nil {
 		return nil, &models.ResponseError{
@@ -44,7 +40,7 @@ func (us UserService) GetUserById(id string) (*models.User, *models.ResponseErro
 			Status:  http.StatusBadRequest,
 		}
 	}
-	return us.usersRepository.GetUserById(idNum)
+	return us.usersRepository.GetById(idNum)
 }
 
 func (us UserService) GetUserPosts(id string) (*[]models.Post, *models.ResponseError) {
@@ -88,16 +84,6 @@ func (us UserService) Login(loginRequest *models.LoginRequest) (*string, *models
 		}
 	}
 	return &s, nil
-}
-func validateUser(user *models.User) *models.ResponseError {
-	if user.Name == "" {
-		return &models.ResponseError{
-			Message: "Invalid title",
-			Status:  http.StatusBadRequest,
-		}
-	}
-	//TODO - other checks
-	return nil
 }
 
 func HashPassword(user *models.User) *models.ResponseError {

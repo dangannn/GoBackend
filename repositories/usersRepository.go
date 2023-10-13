@@ -15,7 +15,7 @@ func NewUserRepository(db *gorm.DB) *UserRepository {
 	return &UserRepository{db}
 }
 
-func (r *UserRepository) GetAllUsers() ([]*models.User, *models.ResponseError) {
+func (r *UserRepository) GetAll() ([]*models.User, *models.ResponseError) {
 	var users []*models.User
 	err := r.db.Find(&users).Error
 	if err != nil {
@@ -27,7 +27,7 @@ func (r *UserRepository) GetAllUsers() ([]*models.User, *models.ResponseError) {
 	return users, nil
 }
 
-func (r *UserRepository) GetUserById(id int) (*models.User, *models.ResponseError) {
+func (r *UserRepository) GetById(id int) (*models.User, *models.ResponseError) {
 	var user *models.User
 	err := r.db.Where("id = ?", id).Find(&user).Error
 	if err != nil {
@@ -74,7 +74,7 @@ func (r *UserRepository) Login(loginRequest *models.LoginRequest) (*models.User,
 	return user, nil
 }
 
-func (r *UserRepository) CreateUser(user *models.User) (*models.User, *models.ResponseError) {
+func (r *UserRepository) Create(user *models.User) (*models.User, *models.ResponseError) {
 	err := r.db.Create(&user).Error
 	if err != nil {
 		return nil, &models.ResponseError{
