@@ -71,10 +71,10 @@ func InitHttpServer(config *viper.Viper, dbHandler *gorm.DB) HttpServer {
 	})
 
 	//Session & CSRF
-	store := cookie.NewStore([]byte("secret"))
-	router.Use(sessions.Sessions("mysession", store))
+	store := cookie.NewStore([]byte(config.GetString("http.store")))
+	router.Use(sessions.Sessions(config.GetString("http.session"), store))
 	router.Use(csrf.Middleware(csrf.Options{
-		Secret: "secrete-key",
+		Secret: config.GetString("http.secrete_key"),
 		ErrorFunc: func(c *gin.Context) {
 			c.String(400, "CSRF token mismatch")
 			c.Abort()

@@ -21,6 +21,10 @@ cors_origin = "http://127.0.0.1:5173"
 cors_methods = "GET, POST, PATCH, DELETE, OPTIONS"
 cors_headers = "Authorization, Origin, Content-Type, Cookie, X-CSRF-Token, Access-Control-Allow-Headers, Origin,Accept, X-Requested-With, Content-Type, Access-Control-Request-Method, Access-Control-Request-Headers"
 cors_credentials = "true"
+secrete_key = "secrete-key"
+session = "mysession"
+store = "secrete"
+
 ###############################################################################
 # Security
 
